@@ -9,3 +9,199 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model RunnerCard {
+  id                    String                  @id @unique @default(uuid())
+  cardName              String
+  flavorText            String
+  decks                 Deck[]
+  baseStrength          Int?
+  baseCost              Int?
+  trashCost             Int?
+  DatafortSlot          DatafortSlot[]
+  HandSlot              HandSlot[]
+  InstalledHardwareSlot InstalledHardwareSlot[]
+  DatafortStack         DatafortStack[]
+  TrashedCard           TrashedCard[]
+  programSlot           ProgramSlot[]
+  Runner                Runner[]
+  DeckCard              DeckCard[]
+}
+
+model User {
+  id          String        @id @unique @default(uuid())
+  about       String?
+  userName    String
+  avatar      String
+  chats       Chat[]
+  chatId      String?
+  gamesWinner Game[]        @relation("Winners")
+  ChatMessage ChatMessage[]
+  decks       Deck[]
+  runners     Runner[]
+  corps       Corp[]
+  games       Game[]
+  rolls       Roll[]
+}
+
+// game can be created only if a runnerID and corpID exist to add as runner and corp. Users are added in an array (optional, can be taken from runner and corp ID) Winner is optional, as there won't be one until the end.
+model Game {
+  id            String  @id @unique @default(uuid())
+  cAP           Int     @default(0)
+  rAP           Int     @default(0)
+  apToWin       Int     @default(7)
+  turns         Int     @default(1)
+  currentPlayer Player  @default(ONE)
+  isActive      Boolean @default(true)
+  winner        User?   @relation("Winners", fields: [winnerId], references: [id])
+  winnerId      String?
+  runner        Runner  @relation(fields: [runnerId], references: [id])
+  corp          Corp    @relation(fields: [corpId], references: [id])
+  User          User[]
+  runnerId      String  @unique
+  corpId        String  @unique
+  rolls         Roll[]
+}
+
+// create chat first
+model Chat {
+  id       String        @id @unique @default(uuid())
+  users    User[]
+  messages ChatMessage[]
+}
+
+// chat messages need user and chat ids
+model ChatMessage {
+  id        String   @id @unique @default(uuid())
+  owner     User     @relation(fields: [userId], references: [id])
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  createdAt DateTime @default(now())
+  chatId    String
+  userId    String
+}
+
+model Deck {
+  id     String       @id @unique @default(uuid())
+  owner  User         @relation(fields: [userId], references: [id])
+  cards  RunnerCard[]
+  userId String
+}
+
+//create Runner and Corp first
+model Runner {
+  id                String                  @id @unique @default(uuid())
+  bits              Int                     @default(5)
+  player            User                    @relation(fields: [playerId], references: [id])
+  playerId          String
+  game              Game?
+  brainDamage       Int                     @default(0)
+  maxHandSize       Int                     @default(5)
+  memoryUnits       Int                     @default(5)
+  installedHardware InstalledHardwareSlot[]
+  hand              HandSlot[]
+  programs          ProgramSlot[]
+  trash             TrashStack?
+  cyberDeck         RunnerCard?             @relation(fields: [runnerCardId], references: [id])
+  runnerCardId      String
+  trashStackId      String                  @unique
+  DeckStack         DeckStack[]
+}
+
+model DeckStack {
+  id       String     @id @unique @default(uuid())
+  runner   Runner     @relation(fields: [runnerId], references: [id])
+  cards    DeckCard[]
+  runnerId String
+}
+
+model DeckCard {
+  id           String     @id @unique @default(uuid())
+  card         RunnerCard @relation(fields: [runnerCardId], references: [id])
+  deck         DeckStack  @relation(fields: [deckStackId], references: [id])
+  runnerCardId String
+  deckStackId  String
+}
+
+model HandSlot {
+  id       String     @id @unique @default(uuid())
+  card     RunnerCard @relation(fields: [cardId], references: [id])
+  cardId   String
+  Runner   Runner     @relation(fields: [runnerId], references: [id])
+  runnerId String
+}
+
+model InstalledHardwareSlot {
+  id        String     @id @unique @default(uuid())
+  card      RunnerCard @relation(fields: [cardId], references: [id])
+  cardId    String
+  Runner    Runner     @relation(fields: [runnerId], references: [id])
+  runnerId  String
+  tempBits  Int?
+  isStealth Boolean?
+}
+
+model ProgramSlot {
+  id       String     @id @unique @default(uuid())
+  card     RunnerCard @relation(fields: [cardId], references: [id])
+  Runner   Runner     @relation(fields: [runnerId], references: [id])
+  runnerId String
+  cardId   String
+}
+
+model TrashStack {
+  id       String        @id @unique @default(uuid())
+  runner   Runner        @relation(fields: [runnerId], references: [id])
+  cards    TrashedCard[]
+  runnerId String        @unique
+}
+
+model TrashedCard {
+  id           String      @id @unique @default(uuid())
+  position     Int         @default(0)
+  card         RunnerCard  @relation(fields: [cardId], references: [id])
+  cardId       String
+  TrashStack   TrashStack? @relation(fields: [trashStackId], references: [id])
+  trashStackId String?
+}
+
+model Corp {
+  id        String          @id @unique @default(uuid())
+  bits      Int             @default(5)
+  player    User            @relation(fields: [userId], references: [id])
+  userId    String
+  game      Game?
+  dataforts DatafortStack[]
+}
+
+model DatafortStack {
+  id           String         @id @unique @default(uuid())
+  corp         Corp           @relation(fields: [corpId], references: [id])
+  corpId       String
+  asset        RunnerCard?    @relation(fields: [cardId], references: [id])
+  cardId       String?
+  DatafortSlot DatafortSlot[]
+}
+
+model DatafortSlot {
+  id         String        @id @unique @default(uuid())
+  position   Int           @default(0)
+  datafort   DatafortStack @relation(fields: [datafortId], references: [id])
+  datafortId String
+  card       RunnerCard?   @relation(fields: [cardId], references: [id])
+  cardId     String?
+  isRezzed   Boolean       @default(false)
+}
+
+model Roll {
+  id     String @id @unique @default(uuid())
+  player User   @relation(fields: [userId], references: [id])
+  userId String
+  value  Int
+  game   Game   @relation(fields: [gameId], references: [id])
+  gameId String
+}
+
+enum Player {
+  ONE
+  TWO
+}
