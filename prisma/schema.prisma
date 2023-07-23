@@ -14,18 +14,21 @@ model RunnerCard {
   id                    String                  @id @unique @default(uuid())
   cardName              String
   flavorText            String
-  decks                 Deck[]
+  decks                 RunnerDeck[]
   baseStrength          Int?
   baseCost              Int?
-  trashCost             Int?
-  DatafortSlot          DatafortSlot[]
+  memoryUnits           Int?
+  isUnique              Boolean                 @default(false)
+  isStealth             Boolean                 @default(false)
+  isNoisy               Boolean                 @default(false)
+  isDeck                Boolean                 @default(false)
+  cardType              RunnerCardType
   HandSlot              HandSlot[]
   InstalledHardwareSlot InstalledHardwareSlot[]
-  DatafortStack         DatafortStack[]
   TrashedCard           TrashedCard[]
   programSlot           ProgramSlot[]
   Runner                Runner[]
-  DeckCard              DeckCard[]
+  DeckCard              RunnerDeckCard[]
 }
 
 model User {
@@ -80,7 +83,7 @@ model ChatMessage {
   userId    String
 }
 
-model Deck {
+model RunnerDeck {
   id     String       @id @unique @default(uuid())
   owner  User         @relation(fields: [userId], references: [id])
   cards  RunnerCard[]
@@ -97,6 +100,7 @@ model Runner {
   brainDamage       Int                     @default(0)
   maxHandSize       Int                     @default(5)
   memoryUnits       Int                     @default(5)
+  actions           Int                     @default(4)
   installedHardware InstalledHardwareSlot[]
   hand              HandSlot[]
   programs          ProgramSlot[]
@@ -104,20 +108,20 @@ model Runner {
   cyberDeck         RunnerCard?             @relation(fields: [runnerCardId], references: [id])
   runnerCardId      String
   trashStackId      String                  @unique
-  DeckStack         DeckStack[]
+  DeckStack         RunnerDeckStack[]
 }
 
-model DeckStack {
-  id       String     @id @unique @default(uuid())
-  runner   Runner     @relation(fields: [runnerId], references: [id])
-  cards    DeckCard[]
+model RunnerDeckStack {
+  id       String           @id @unique @default(uuid())
+  runner   Runner           @relation(fields: [runnerId], references: [id])
+  cards    RunnerDeckCard[]
   runnerId String
 }
 
-model DeckCard {
-  id           String     @id @unique @default(uuid())
-  card         RunnerCard @relation(fields: [runnerCardId], references: [id])
-  deck         DeckStack  @relation(fields: [deckStackId], references: [id])
+model RunnerDeckCard {
+  id           String          @id @unique @default(uuid())
+  card         RunnerCard      @relation(fields: [runnerCardId], references: [id])
+  deck         RunnerDeckStack @relation(fields: [deckStackId], references: [id])
   runnerCardId String
   deckStackId  String
 }
@@ -141,11 +145,13 @@ model InstalledHardwareSlot {
 }
 
 model ProgramSlot {
-  id       String     @id @unique @default(uuid())
-  card     RunnerCard @relation(fields: [cardId], references: [id])
-  Runner   Runner     @relation(fields: [runnerId], references: [id])
-  runnerId String
-  cardId   String
+  id        String     @id @unique @default(uuid())
+  card      RunnerCard @relation(fields: [cardId], references: [id])
+  Runner    Runner     @relation(fields: [runnerId], references: [id])
+  runnerId  String
+  cardId    String
+  tempBits  Int?
+  isStealth Boolean?
 }
 
 model TrashStack {
@@ -156,29 +162,29 @@ model TrashStack {
 }
 
 model TrashedCard {
-  id           String      @id @unique @default(uuid())
-  position     Int         @default(0)
-  card         RunnerCard  @relation(fields: [cardId], references: [id])
+  id           String     @id @unique @default(uuid())
+  position     Int        @default(0)
+  card         RunnerCard @relation(fields: [cardId], references: [id])
   cardId       String
-  TrashStack   TrashStack? @relation(fields: [trashStackId], references: [id])
-  trashStackId String?
+  TrashStack   TrashStack @relation(fields: [trashStackId], references: [id])
+  trashStackId String
 }
 
 model Corp {
-  id        String          @id @unique @default(uuid())
-  bits      Int             @default(5)
-  player    User            @relation(fields: [userId], references: [id])
-  userId    String
-  game      Game?
-  dataforts DatafortStack[]
+  id          String          @id @unique @default(uuid())
+  bits        Int             @default(5)
+  player      User            @relation(fields: [userId], references: [id])
+  userId      String
+  game        Game?
+  dataforts   DatafortStack[]
+  maxHandSize Int             @default(5)
+  actions     Int             @default(3)
 }
 
 model DatafortStack {
   id           String         @id @unique @default(uuid())
   corp         Corp           @relation(fields: [corpId], references: [id])
   corpId       String
-  asset        RunnerCard?    @relation(fields: [cardId], references: [id])
-  cardId       String?
   DatafortSlot DatafortSlot[]
 }
 
@@ -187,8 +193,6 @@ model DatafortSlot {
   position   Int           @default(0)
   datafort   DatafortStack @relation(fields: [datafortId], references: [id])
   datafortId String
-  card       RunnerCard?   @relation(fields: [cardId], references: [id])
-  cardId     String?
   isRezzed   Boolean       @default(false)
 }
 
@@ -204,4 +208,26 @@ model Roll {
 enum Player {
   ONE
   TWO
+}
+
+enum RunnerCardType {
+  PROGRAM
+  HARDWARE
+  PREP
+  RESOURCE
+}
+
+enum RunnerCardSubType {
+  CHIP
+  CONNECTION
+  BBS
+  RANDOM
+  POSITION
+  VEHICLE
+  SABOTAGE
+  BASELINK
+  ICEBREAKER
+  DETECTION
+  DAEMON
+  VIRUS
 }
