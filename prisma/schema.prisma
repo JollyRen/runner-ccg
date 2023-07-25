@@ -10,190 +10,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model RunnerCard {
-  id                    String                  @id @unique @default(uuid())
-  cardName              String
-  flavorText            String
-  decks                 RunnerDeck[]
-  baseStrength          Int?
-  baseCost              Int?
-  memoryUnits           Int?
-  isUnique              Boolean                 @default(false)
-  isStealth             Boolean                 @default(false)
-  isNoisy               Boolean                 @default(false)
-  isDeck                Boolean                 @default(false)
-  cardType              RunnerCardType
-  HandSlot              HandSlot[]
-  InstalledHardwareSlot InstalledHardwareSlot[]
-  TrashedCard           TrashedCard[]
-  programSlot           ProgramSlot[]
-  Runner                Runner[]
-  DeckCard              RunnerDeckCard[]
-}
-
 model User {
   id          String        @id @unique @default(uuid())
-  about       String?
   userName    String
   avatar      String
-  chats       Chat[]
   chatId      String?
+  about       String?
   gamesWinner Game[]        @relation("Winners")
+  chats       Chat[]
   ChatMessage ChatMessage[]
-  decks       Deck[]
+  decks       RunnerDeck[]
   runners     Runner[]
   corps       Corp[]
   games       Game[]
   rolls       Roll[]
-}
-
-// game can be created only if a runnerID and corpID exist to add as runner and corp. Users are added in an array (optional, can be taken from runner and corp ID) Winner is optional, as there won't be one until the end.
-model Game {
-  id            String  @id @unique @default(uuid())
-  cAP           Int     @default(0)
-  rAP           Int     @default(0)
-  apToWin       Int     @default(7)
-  turns         Int     @default(1)
-  currentPlayer Player  @default(ONE)
-  isActive      Boolean @default(true)
-  winner        User?   @relation("Winners", fields: [winnerId], references: [id])
-  winnerId      String?
-  runner        Runner  @relation(fields: [runnerId], references: [id])
-  corp          Corp    @relation(fields: [corpId], references: [id])
-  User          User[]
-  runnerId      String  @unique
-  corpId        String  @unique
-  rolls         Roll[]
-}
-
-// create chat first
-model Chat {
-  id       String        @id @unique @default(uuid())
-  users    User[]
-  messages ChatMessage[]
-}
-
-// chat messages need user and chat ids
-model ChatMessage {
-  id        String   @id @unique @default(uuid())
-  owner     User     @relation(fields: [userId], references: [id])
-  chat      Chat     @relation(fields: [chatId], references: [id])
-  createdAt DateTime @default(now())
-  chatId    String
-  userId    String
-}
-
-model RunnerDeck {
-  id     String       @id @unique @default(uuid())
-  owner  User         @relation(fields: [userId], references: [id])
-  cards  RunnerCard[]
-  userId String
-}
-
-//create Runner and Corp first
-model Runner {
-  id                String                  @id @unique @default(uuid())
-  bits              Int                     @default(5)
-  player            User                    @relation(fields: [playerId], references: [id])
-  playerId          String
-  game              Game?
-  brainDamage       Int                     @default(0)
-  maxHandSize       Int                     @default(5)
-  memoryUnits       Int                     @default(5)
-  actions           Int                     @default(4)
-  installedHardware InstalledHardwareSlot[]
-  hand              HandSlot[]
-  programs          ProgramSlot[]
-  trash             TrashStack?
-  cyberDeck         RunnerCard?             @relation(fields: [runnerCardId], references: [id])
-  runnerCardId      String
-  trashStackId      String                  @unique
-  DeckStack         RunnerDeckStack[]
-}
-
-model RunnerDeckStack {
-  id       String           @id @unique @default(uuid())
-  runner   Runner           @relation(fields: [runnerId], references: [id])
-  cards    RunnerDeckCard[]
-  runnerId String
-}
-
-model RunnerDeckCard {
-  id           String          @id @unique @default(uuid())
-  card         RunnerCard      @relation(fields: [runnerCardId], references: [id])
-  deck         RunnerDeckStack @relation(fields: [deckStackId], references: [id])
-  runnerCardId String
-  deckStackId  String
-}
-
-model HandSlot {
-  id       String     @id @unique @default(uuid())
-  card     RunnerCard @relation(fields: [cardId], references: [id])
-  cardId   String
-  Runner   Runner     @relation(fields: [runnerId], references: [id])
-  runnerId String
-}
-
-model InstalledHardwareSlot {
-  id        String     @id @unique @default(uuid())
-  card      RunnerCard @relation(fields: [cardId], references: [id])
-  cardId    String
-  Runner    Runner     @relation(fields: [runnerId], references: [id])
-  runnerId  String
-  tempBits  Int?
-  isStealth Boolean?
-}
-
-model ProgramSlot {
-  id        String     @id @unique @default(uuid())
-  card      RunnerCard @relation(fields: [cardId], references: [id])
-  Runner    Runner     @relation(fields: [runnerId], references: [id])
-  runnerId  String
-  cardId    String
-  tempBits  Int?
-  isStealth Boolean?
-}
-
-model TrashStack {
-  id       String        @id @unique @default(uuid())
-  runner   Runner        @relation(fields: [runnerId], references: [id])
-  cards    TrashedCard[]
-  runnerId String        @unique
-}
-
-model TrashedCard {
-  id           String     @id @unique @default(uuid())
-  position     Int        @default(0)
-  card         RunnerCard @relation(fields: [cardId], references: [id])
-  cardId       String
-  TrashStack   TrashStack @relation(fields: [trashStackId], references: [id])
-  trashStackId String
-}
-
-model Corp {
-  id          String          @id @unique @default(uuid())
-  bits        Int             @default(5)
-  player      User            @relation(fields: [userId], references: [id])
-  userId      String
-  game        Game?
-  dataforts   DatafortStack[]
-  maxHandSize Int             @default(5)
-  actions     Int             @default(3)
-}
-
-model DatafortStack {
-  id           String         @id @unique @default(uuid())
-  corp         Corp           @relation(fields: [corpId], references: [id])
-  corpId       String
-  DatafortSlot DatafortSlot[]
-}
-
-model DatafortSlot {
-  id         String        @id @unique @default(uuid())
-  position   Int           @default(0)
-  datafort   DatafortStack @relation(fields: [datafortId], references: [id])
-  datafortId String
-  isRezzed   Boolean       @default(false)
 }
 
 model Roll {
@@ -205,29 +35,329 @@ model Roll {
   gameId String
 }
 
-enum Player {
-  ONE
-  TWO
+// create chat first
+model Chat {
+  id       String        @id @unique @default(uuid())
+  users    User[]
+  messages ChatMessage[]
 }
 
-enum RunnerCardType {
-  PROGRAM
-  HARDWARE
-  PREP
-  RESOURCE
+// chat messages need user and chat ids
+model ChatMessage {
+  id          String   @id @unique @default(uuid())
+  messageText String
+  createdAt   DateTime @default(now())
+  owner       User     @relation(fields: [userId], references: [id])
+  chat        Chat     @relation(fields: [chatId], references: [id])
+  chatId      String
+  userId      String
 }
 
-enum RunnerCardSubType {
-  CHIP
-  CONNECTION
-  BBS
-  RANDOM
-  POSITION
-  VEHICLE
-  SABOTAGE
-  BASELINK
-  ICEBREAKER
-  DETECTION
-  DAEMON
-  VIRUS
+// game can be created only if a runnerID and corpID exist to add as runner and corp. Users are added in an array (optional, can be taken from runner and corp ID) Winner is optional, as there won't be one until the end.
+model Game {
+  id            String  @id @unique @default(uuid())
+  cAP           Int     @default(0)
+  rAP           Int     @default(0)
+  apToWin       Int     @default(7)
+  turns         Int     @default(1)
+  isActive      Boolean @default(true)
+  runner        Runner  @relation(fields: [runnerId], references: [id])
+  corp          Corp    @relation(fields: [corpId], references: [id])
+  winner        User?   @relation("Winners", fields: [winnerId], references: [id])
+  User          User[]
+  rolls         Roll[]
+  currentPlayer Int     @default(1)
+  runnerId      String  @unique
+  corpId        String  @unique
+  winnerId      String?
 }
+
+//create Runner and Corp first
+
+// ================
+// RUNNER MODELS
+// ================
+
+model Runner {
+  id                String            @id @unique @default(uuid())
+  playerId          String
+  tokenNames        String[]
+  tokens            Int               @default(0)
+  bits              Int               @default(5)
+  maxHandSize       Int               @default(5)
+  currentHandSize   Int               @default(0)
+  maxMemoryUnits    Int               @default(5)
+  usedMemoryUnits   Int               @default(0)
+  actions           Int               @default(4)
+  actionsRemaining  Int               @default(4)
+  tags              Int               @default(0)
+  player            User              @relation(fields: [playerId], references: [id])
+  cyberDeck         RunnerCard?       @relation(fields: [runnerCardId], references: [id])
+  game              Game?
+  trash             TrashStack?
+  installedHardware InsHWSlot[]
+  hand              HandSlot[]
+  programs          ProgramSlot[]
+  deckStack         RunnerDeckStack[]
+  runnerCardId      String
+  trashStackId      String            @unique
+}
+
+model RunnerCard {
+  id               String           @id @unique @default(uuid())
+  cardName         String
+  effectText       String
+  cardType         String
+  imageUrl         String
+  flavorText       String?
+  cardSubTypes     String[]
+  baseCost         Int              @default(0)
+  baseStrength     Int?
+  memoryUnits      Int?
+  decks            RunnerDeck       @relation(fields: [runnerDeckId], references: [id])
+  handStack        HandSlot[]
+  insHWStack       InsHWSlot[]
+  trashedStack     TrashedCard[]
+  programStack     ProgramSlot[]
+  runnersUsingCard Runner[]
+  deckCards        RunnerDeckCard[]
+  runnerDeckId     String
+}
+
+// runner deck
+model RunnerDeck {
+  id     String       @id @unique @default(uuid())
+  owner  User         @relation(fields: [userId], references: [id])
+  cards  RunnerCard[]
+  userId String
+}
+
+// runner deck stack
+model RunnerDeckStack {
+  id       String           @id @unique @default(uuid())
+  position Int              @default(0)
+  runner   Runner           @relation(fields: [runnerId], references: [id])
+  cards    RunnerDeckCard[]
+  runnerId String
+}
+
+model RunnerDeckCard {
+  id           String          @id @unique @default(uuid())
+  position     Int             @default(0)
+  card         RunnerCard      @relation(fields: [runnerCardId], references: [id])
+  deck         RunnerDeckStack @relation(fields: [deckStackId], references: [id])
+  runnerCardId String
+  deckStackId  String
+}
+
+// runner hand
+model HandSlot {
+  id       String     @id @unique @default(uuid())
+  position Int        @default(0)
+  card     RunnerCard @relation(fields: [cardId], references: [id])
+  runner   Runner     @relation(fields: [runnerId], references: [id])
+  cardId   String
+  runnerId String
+}
+
+// installed HW
+model InsHWSlot {
+  id            String       @id @unique @default(uuid())
+  position      Int          @default(0)
+  maxTempBits   Int          @default(0)
+  tempBits      Int?
+  isStealth     Boolean?
+  card          RunnerCard   @relation(fields: [cardId], references: [id])
+  runner        Runner       @relation(fields: [runnerId], references: [id])
+  insProgram    ProgramSlot? @relation(fields: [programSlotId], references: [id])
+  cardId        String
+  runnerId      String
+  programSlotId String?
+}
+
+model ProgramSlot {
+  id          String      @id @unique @default(uuid())
+  position    Int         @default(0)
+  maxTempBits Int         @default(0)
+  baseStr     Int?
+  currStr     Int?
+  baseLink    Int?
+  currentLink Int?
+  tempBits    Int?
+  isStealth   Boolean?
+  isNoisy     Boolean?
+  InsHWSlot   InsHWSlot[]
+  card        RunnerCard  @relation(fields: [cardId], references: [id])
+  runner      Runner      @relation(fields: [runnerId], references: [id])
+  cardId      String
+  runnerId    String
+}
+
+// runner trash
+model TrashStack {
+  id       String        @id @unique @default(uuid())
+  runner   Runner        @relation(fields: [runnerId], references: [id])
+  cards    TrashedCard[]
+  runnerId String        @unique
+}
+
+model TrashedCard {
+  id           String     @id @unique @default(uuid())
+  position     Int        @default(0)
+  card         RunnerCard @relation(fields: [cardId], references: [id])
+  TrashStack   TrashStack @relation(fields: [trashStackId], references: [id])
+  cardId       String
+  trashStackId String
+}
+
+// ================
+// CORP MODELS
+// ================
+
+model Corp {
+  id               String          @id @unique @default(uuid())
+  tokens           Int             @default(0)
+  bits             Int             @default(5)
+  maxHandSize      Int             @default(5)
+  currentHandSize  Int             @default(0)
+  actions          Int             @default(3)
+  actionsRemaining Int             @default(3)
+  tokenNames       String[]
+  player           User            @relation(fields: [userId], references: [id])
+  game             Game?
+  trashStack       CorpTrashStack?
+  deckStack        CorpDeckStack?
+  handStack        CorpHandSlot[]
+  agendas          AgendaCard[]
+  dataforts        DatafortStack[]
+  userId           String
+  corpTrashStackId String?
+  corpDeckStackId  String?
+}
+
+// corp card
+model CorpCard {
+  id              String          @id @unique @default(uuid())
+  cardName        String
+  effectText      String
+  cardType        String
+  imageUrl        String
+  flavorText      String?
+  cardSubType     String[]
+  baseCost        Int             @default(0)
+  baseTrash       Int?
+  baseStrength    Int?
+  baseTrace       Int?
+  agendasInPlay   AgendaCard[]
+  insDFSlots      InsDFSlot[]
+  corpTrashSlots  CorpTrashSlot[]
+  corpDeckSlots   CorpDeckSlot[]
+  datafortStack   DatafortStack?  @relation(fields: [datafortStackId], references: [id])
+  datafortStackId String?
+}
+
+// Corp trash
+model CorpTrashStack {
+  id     String          @id @unique @default(uuid())
+  corp   Corp            @relation(fields: [corpId], references: [id])
+  corpId String          @unique
+  cards  CorpTrashSlot[]
+}
+
+model CorpTrashSlot {
+  id               String         @id @unique @default(uuid())
+  position         Int            @default(0)
+  card             CorpCard       @relation(fields: [corpCardId], references: [id])
+  corpTrashStack   CorpTrashStack @relation(fields: [corpTrashStackId], references: [id])
+  corpTrashStackId String
+  corpCardId       String
+}
+
+// corp deck
+model CorpDeckStack {
+  id           String         @id @unique @default(uuid())
+  CorpDeckSlot CorpDeckSlot[]
+  corp         Corp           @relation(fields: [corpId], references: [id])
+  corpId       String         @unique
+}
+
+model CorpDeckSlot {
+  id              String        @id @unique @default(uuid())
+  position        Int           @default(0)
+  card            CorpCard      @relation(fields: [corpCardId], references: [id])
+  corpDeckStack   CorpDeckStack @relation(fields: [corpDeckStackId], references: [id])
+  corpCardId      String
+  corpDeckStackId String
+}
+
+// corp hand
+model CorpHandSlot {
+  id       String  @id @unique @default(uuid())
+  position Int     @default(0)
+  corp     Corp?   @relation(fields: [corpId], references: [id])
+  corpId   String?
+}
+
+// corp scored agendas
+model AgendaCard {
+  id         String   @id @unique @default(uuid())
+  tokens     Int      @default(0)
+  position   Int      @default(0)
+  tokenNames String[]
+  card       CorpCard @relation(fields: [corpCardId], references: [id])
+  corp       Corp     @relation(fields: [corpId], references: [id])
+  corpId     String
+  corpCardId String
+}
+
+// dataforts
+model DatafortStack {
+  id             String         @id @unique @default(uuid())
+  position       Int            @default(0)
+  corp           Corp           @relation(fields: [corpId], references: [id])
+  installedStack InsDFStack?    @relation(fields: [insDFStackId], references: [id])
+  datafortSlot   DatafortSlot[]
+  corpCard       CorpCard[]
+  corpId         String
+  insDFStackId   String?
+}
+
+model DatafortSlot {
+  id           String        @id @unique @default(uuid())
+  position     Int           @default(0)
+  baseStr      Int?
+  currentStr   Int?
+  baseCost     Int?
+  currentCost  Int?
+  baseTrace    Int?
+  currentTrace Int?
+  isRezzed     Boolean       @default(false)
+  isPublic     Boolean       @default(false)
+  datafort     DatafortStack @relation(fields: [datafortId], references: [id])
+  datafortId   String
+}
+
+// dataforts installed cards
+model InsDFStack {
+  id            String          @id @unique @default(uuid())
+  insCards      InsDFSlot[]
+  DatafortStack DatafortStack[]
+}
+
+model InsDFSlot {
+  id           String     @id @unique @default(uuid())
+  isRezzed     Boolean    @default(false)
+  isPublic     Boolean    @default(false)
+  baseCost     Int?
+  currentBits  Int?
+  baseTrash    Int?
+  currentTrash Int?
+  card         CorpCard?  @relation(fields: [corpCardId], references: [id])
+  InsDFStack   InsDFStack @relation(fields: [insDFStackId], references: [id])
+  insDFStackId String
+  corpCardId   String?
+}
+
+// =================
+// ENUMS
+// =================
