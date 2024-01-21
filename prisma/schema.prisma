@@ -12,10 +12,8 @@ datasource db {
 
 model Chat {
   id       String        @id @unique @default(uuid())
-  game     Game?         @relation(fields: [gameId], references: [id])
-  users    User[]
+  game     Game?
   messages ChatMessage[]
-  gameId   String?
 }
 
 // chat messages need user and chat ids
@@ -37,93 +35,58 @@ model Deck {
   PlayDeck PlayDeck[]
 }
 
+// cards in use = all cards at time the game starts
 model PlayDeck {
   id         String      @id @unique @default(uuid())
-  isCorp     Boolean
   cardsInUse CardInUse[]
+  Player     Player[]
   deckInUse  Deck        @relation(fields: [deckId], references: [id])
   deckId     String
-  Player     Player[]
 }
+
+// corpTypes = [Agenda, Ice, Operation, Node, Upgrade]
+// runTypes = [Program, Prep, Resource, Hardware]
+// baseInts (cardType === "Agenda") = [baseCost 0, agendaPoints 1]
+// baseInts (corpTypes.has(cardType)) = [baseCost 0, baseTrash 2, baseStrength]
+// baseInts (else) = [baseCost 0, memCost 1, baseStrength 2, costToStrengthen 3, costToBreak 4, baseLink 5]
 
 model Card {
-  id               String      @id @unique @default(uuid())
-  cardName         String
-  flavorText       String?
-  effectText       String
-  cardType         String
-  cardSubTypes     String[]
-  isCorp           Boolean
-  baseCost         Int         @default(0)
-  baseStrength     Int?
-  baseLink         Int?
-  costToStrengthen Int?
-  costToBreak      Int?
-  memCost          Int?
-  baseTrash        Int?
-  imageUrl         CardImage   @relation(fields: [cardImageId], references: [id])
-  cardImageId      String
-  runnerCardId     String?
-  Deck             Deck?       @relation(fields: [deckId], references: [id])
-  deckId           String?
-  agendaPoints     Int?
-  isAgenda         Boolean     @default(false)
-  CardInUse        CardInUse[]
-}
-
-model CardImage {
-  id    String @id @unique @default(uuid())
-  value String
-  card  Card[]
-}
-
-model CardInUse {
-  id         String     @id @unique @default(uuid())
-  card       Card       @relation(fields: [cardId], references: [id])
-  modifiers  Modifier[]
-  CardSlot   CardSlot[]
-  PlayDeck   PlayDeck?  @relation(fields: [playDeckId], references: [id])
-  cardId     String
-  playDeckId String?
-}
-
-model Modifier {
-  id             String     @id @unique @default(uuid())
-  strengthChange Int?
-  costChange     Int?
-  trashChange    Int?
-  hasProgam      CardSlot?  @relation(fields: [cardSlotId], references: [id])
-  CardInUse      CardInUse? @relation(fields: [cardInUseId], references: [id])
-  cardInUseId    String?
-  programSlotId  String?
-  cardSlotId     String?
+  id           String      @id @unique @default(uuid())
+  cardName     String
+  flavorText   String?
+  effectText   String
+  cardType     String
+  cardSubTypes String[]
+  baseInts     Int[]
+  imageUrl     String
+  CardInUse    CardInUse[]
+  Deck         Deck?       @relation(fields: [deckId], references: [id])
+  deckId       String?
 }
 
 model User {
   id          String        @id @unique @default(uuid())
   username    String
   password    String
-  Player      Player[]
-  Game        Game[]
-  Deck        Deck[]
-  Chat        Chat?         @relation(fields: [chatId], references: [id])
-  chatId      String?
-  ChatMessage ChatMessage[]
+  player      Player[]
+  game        Game[]
+  deck        Deck[]
+  chatMessage ChatMessage[]
 }
 
+// agendaPoints = [corp 0, runner 1, toWin 2]
 model Game {
-  id         String   @id @unique @default(uuid())
-  turn       Int
-  isCorpTurn Boolean  @default(true)
-  isActive   Boolean  @default(true)
-  rAP        Int      @default(0)
-  cAP        Int      @default(0)
-  apToWin    Int      @default(7)
-  rolls      Roll[]
-  players    Player[]
-  Chat       Chat[]
-  winner     User?    @relation(fields: [winnerId], references: [id])
-  winnerId   String?
+  id           String   @id @unique @default(uuid())
+  turn         Int
+  isCorpTurn   Boolean  @default(true)
+  isActive     Boolean  @default(true)
+  agendaPoints Int[]
+  rolls        Roll[]
+  players      Player[]
+  chat         Chat?    @relation(fields: [chatId], references: [id])
+  winner       User?    @relation(fields: [winnerId], references: [id])
+  chatId       String?  @unique
+  winnerId     String?
 }
 
 model Player {
@@ -132,7 +95,7 @@ model Player {
   maxHandSize    Int         @default(5)
   maxActions     Int         @default(4)
   currentActions Int         @default(4)
-  isCorp         Boolean     @default(false)
+  isCorpTurn     Boolean     @default(false)
   token          Token[]
   Roll           Roll[]
   CardStack      CardStack[]
@@ -158,17 +121,27 @@ model CardStack {
 model CardSlot {
   id          String     @id @unique @default(uuid())
   position    Int?
-  isCyberDeck Boolean    @default(false)
-  installed   CardSlot[] @relation("instRunCards")
-  Modifier    Modifier[]
   card        CardInUse  @relation(fields: [cardInUseId], references: [id])
   corpIns     CardStack? @relation("corpInstalled", fields: [corpInsId], references: [id])
   corpUpg     CardStack? @relation("corpUpgrade", fields: [corpUpgId], references: [id])
-  insCard     CardSlot?  @relation("instRunCards", fields: [insCardId], references: [id])
-  cardInUseId String
+  cardInUseId String     @unique
   corpInsId   String?    @unique
   corpUpgId   String?    @unique
-  insCardId   String?
+}
+
+// CardInUse holds state on the card
+// modifiers = rezzed, public, installed [] Strings, if array contains it, then true (use with set and modifiers.has())
+// changes = strength, cost, trashcost [0, 1, 2] positive or negative Int
+model CardInUse {
+  id         String    @id @unique @default(uuid())
+  card       Card      @relation(fields: [cardId], references: [id])
+  modifiers  String[]
+  changes    Int[]
+  tokens     Token[]
+  CardSlot   CardSlot?
+  PlayDeck   PlayDeck? @relation(fields: [playDeckId], references: [id])
+  cardId     String
+  playDeckId String?
 }
 
 model Roll {
@@ -182,10 +155,12 @@ model Roll {
 }
 
 model Token {
-  id       String  @id @unique @default(uuid())
-  number   Int     @default(1)
-  name     String
-  effect   String
-  Player   Player? @relation(fields: [playerId], references: [id])
-  playerId String?
+  id          String     @id @unique @default(uuid())
+  number      Int        @default(1)
+  name        String
+  effect      String
+  Player      Player?    @relation(fields: [playerId], references: [id])
+  CardInUse   CardInUse? @relation(fields: [cardInUseId], references: [id])
+  playerId    String?
+  cardInUseId String?
 }
